@@ -4,7 +4,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 import requests
 import folium
-import threading
+import threadingd
 import sys
 import json
 import webbrowser
