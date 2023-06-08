@@ -273,6 +273,7 @@ class DateCourseApp:
         self.memo_text.pack(side=tk.LEFT)
         self.memo_text.configure(bg='white')
 
+        
         # 저장 버튼
         save_button = tk.Button(memo_frame, text="저장", font=("맑은 고딕", 14), command=self.save_memo)
         save_button.pack(side=tk.LEFT, padx=(10, 0))
