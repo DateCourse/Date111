@@ -4,7 +4,7 @@ from tkinter import messagebox
 from tkinter import filedialog
 import requests
 import folium
-import threadingd
+import threading
 import sys
 import json
 import webbrowser
@@ -294,9 +294,9 @@ class DateCourseApp:
         map_button.configure(bg='light pink')
 
         # 그래프 버튼
-        graph_button = tk.Button(map_graph_button_frame, text="그래프", font=("맑은 고딕", 20), command=self.open_graph)
-        graph_button.pack(side=tk.LEFT, padx=10)
-        graph_button.configure(bg='light pink')
+        #graph_button = tk.Button(map_graph_button_frame, text="그래프", font=("맑은 고딕", 20), command=self.open_graph)
+        #graph_button.pack(side=tk.LEFT, padx=10)
+        #graph_button.configure(bg='light pink')
 
     def showMap(frame):
         global browser
@@ -331,57 +331,7 @@ class DateCourseApp:
     def cancel_memo(self):
         # 메모 취소 시 메모장 초기화
         self.memo_text.delete("1.0", tk.END)
-    def open_graph(self):
-        memo_content = self.memo_text.get("1.0", tk.END).strip()  # 메모장의 내용을 가져옵니다.
-        data = self.get_data_from_api()  # API에서 데이터 가져오는 함수 호출
-        sigun_nm_list = [item['SIGUN_NM'] for item in data]  # SIGUN_NM 데이터 추출
 
-        url_restaurant = "https://openapi.gg.go.kr/Genrestrtstandpub"
-        api_key_restaurant = "073a67dd2f404141bda409a5cf579366"
-        restaurant_data = self.get_data_from_api(memo_content, url_restaurant, api_key_restaurant)
-        if not restaurant_data:
-            messagebox.showinfo("데이터 오류", "맛집 데이터를 가져오는 중 오류가 발생했습니다.")
-            return
-
-        url_cafe = "https://openapi.gg.go.kr/Genrestrtcate"
-        api_key_cafe = "34d47489070244e2ac22cc1d11fedad0"
-        cafe_data = self.get_data_from_api(memo_content, url_cafe, api_key_cafe)
-        if not cafe_data:
-            messagebox.showinfo("데이터 오류", "카페 데이터를 가져오는 중 오류가 발생했습니다.")
-            return
-
-        url_theater = "https://openapi.gg.go.kr/MovieTheater"
-        api_key_theater = "20706406f12c4505bdfa0997a06f939a"
-        theater_data = self.get_data_from_api(memo_content, url_theater, api_key_theater)
-        if not theater_data:
-            messagebox.showinfo("데이터 오류", "영화관 데이터를 가져오는 중 오류가 발생했습니다.")
-            return
-
-    #def get_data_from_api(self):
-        # API에서 데이터 가져오는 로직 구현
-        # 예시로 임의의 데이터를 반환하는 코드 작성
-        #data = [
-        #    {'SIGUN_NM': 'Seoul', 'Population': 1000000},
-        #    {'SIGUN_NM': 'Busan', 'Population': 500000},
-        #    {'SIGUN_NM': 'Incheon', 'Population': 700000},
-        #    {'SIGUN_NM': 'Gwangju', 'Population': 300000},
-        #    {'SIGUN_NM': 'Daejeon', 'Population': 400000},
-        #]
-        #return data
-
-    def get_data_from_api(self, keyword, api_url, api_key):
-        params = {
-            "KEY": api_key,
-            "pIndex": 1,
-            "Type": "json",
-            "SIGUN_NM": keyword
-        }
-        response = requests.get(api_url, params=params)
-        if response.status_code == 200:
-            data = response.json()
-            if 'row' in data:
-                return data['row']
-        return None
     def run(self):
         self.window.mainloop()
 
