@@ -1,12 +1,18 @@
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
+from tkinter import filedialog
 import requests
+import folium
+import threading
 import sys
 import json
 import webbrowser
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import random
 from PIL import ImageTk, Image
+import numpy as np
 from cefpython3 import cefpython as cef
 class DateCourseApp:
     def __init__(self, window):
@@ -253,41 +259,76 @@ class DateCourseApp:
             self.address_text.insert(tk.END, address)
 
     def create_memo_pad(self):
-        # 메모 및 지도 프레임
-        memo_map_frame = tk.Frame(self.window)
-        memo_map_frame.pack(pady=10)
-        memo_map_frame.configure(bg='pink')
+        # 메모 프레임
+        memo_frame = tk.Frame(self.window)
+        memo_frame.pack(pady=10)
+        memo_frame.configure(bg='pink')
 
         # 메모 제목 레이블
-        memo_label = tk.Label(memo_map_frame, text="메모", font=("맑은 고딕", 14))
+        memo_label = tk.Label(memo_frame, text="메모", font=("맑은 고딕", 14))
         memo_label.pack(side=tk.LEFT, padx=(0, 10))
         memo_label.configure(bg='pink')
 
         # 메모장 칸
-        self.memo_text = tk.Text(memo_map_frame, height=8, width=40)
+        self.memo_text = tk.Text(memo_frame, height=8, width=40)
         self.memo_text.pack(side=tk.LEFT)
         self.memo_text.configure(bg='white')
 
         # 저장 버튼
-        save_button = tk.Button(memo_map_frame, text="저장", font=("맑은 고딕", 14), command=self.save_memo)
+        save_button = tk.Button(memo_frame, text="저장", font=("맑은 고딕", 14), command=self.save_memo)
         save_button.pack(side=tk.LEFT, padx=(10, 0))
         save_button.configure(bg='light pink')
 
         # 취소 버튼
-        cancel_button = tk.Button(memo_map_frame, text="취소", font=("맑은 고딕", 14), command=self.cancel_memo)
+        cancel_button = tk.Button(memo_frame, text="취소", font=("맑은 고딕", 14), command=self.cancel_memo)
         cancel_button.pack(side=tk.LEFT, padx=(10, 0))
         cancel_button.configure(bg='light pink')
 
-        # 지도 버튼 프레임
-        map_button_frame = tk.Frame(self.window)
-        map_button_frame.pack(pady=10)
-        map_button_frame.configure(bg='pink')
+        # 지도 및 그래프 버튼 프레임
+        map_graph_button_frame = tk.Frame(memo_frame)
+        map_graph_button_frame.pack(side=tk.LEFT)
+        map_graph_button_frame.configure(bg='light pink')
 
         # 지도 버튼
-        map_button = tk.Button(memo_map_frame, text="지도", font=("맑은 고딕", 14), command=self.open_map)
-        map_button.pack(side=tk.LEFT, padx=(10, 0))
+        map_button = tk.Button(map_graph_button_frame, text="지도", font=("맑은 고딕", 20), command=self.open_map)
+        map_button.pack(side=tk.LEFT, padx=10)
         map_button.configure(bg='light pink')
 
+        # 그래프 버튼
+        graph_button = tk.Button(map_graph_button_frame, text="그래프", font=("맑은 고딕", 20), command=self.open_graph)
+        graph_button.pack(side=tk.LEFT, padx=10)
+        graph_button.configure(bg='light pink')
+
+    def open_graph(self):
+        # API 요청을 통해 데이터 가져오기
+        api_url = "https://openapi.gg.go.kr/Genrestrtstandpub"  # API의 엔드포인트 URL
+        api_key = "073a67dd2f404141bda409a5cf579366"  # API 키
+        response = requests.get(api_url, headers={"SIGUN_NM": api_key})
+        if response.status_code == 200:
+            data = response.json()
+            # 데이터 처리 및 그래프 생성
+            x = [item['x'] for item in data]
+            y = [item['y'] for item in data]
+            # 그래프 생성
+            plt.figure(figsize=(8, 6))
+            plt.plot(x, y)
+            plt.xlabel('X-axis')
+            plt.ylabel('Y-axis')
+            plt.title('Sample Graph')
+            # 그래프 출력
+            plt.show()
+        else:
+            # API 요청 오류 처리
+            print("API 요청 중 오류가 발생했습니다.")
+
+    def showMap(frame):
+        global browser
+        sys.excepthook = cef.ExceptHook
+        window_info = cef.WindowInfo(frame.winfo_id())
+        window_info.SetAsChild(frame.winfo_id(), [0, 0, 800, 600])
+        cef.Initialize()
+        browser = cef.CreateBrowserSync(window_info, url='file:///map.html')
+        cef.MessageLoop()
     def open_map(self):
         location = self.memo_text.get("1.0", tk.END).strip()  # 메모장의 내용을 가져옵니다.
         if location:
@@ -295,16 +336,21 @@ class DateCourseApp:
             webbrowser.open_new_tab(url)
         else:
             # 메모장이 비어있을 경우에 대한 처리
-            tk.messagebox.showinfo("지도", "메모 내용을 입력해주세요.")
-
+            messagebox.showinfo("알림", "메모 내용을 입력해주세요.")
     def save_memo(self):
         # 메모장 칸의 내용을 가져와서 저장하는 기능을 구현할 수 있습니다.
         memo = self.memo_text.get("1.0", tk.END)
         # 메모 저장에 대한 추가적인 동작을 원하신다면 여기에 작성할 수 있습니다.
-
-        # 저장 확인 메시지 박스
-        messagebox.showinfo("저장 완료", "메모가 저장되었습니다.")
-
+        # 저장 파일 선택
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt",
+                                                 filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")])
+        if file_path:
+            # 저장 확인 메시지 박스
+            messagebox.showinfo("저장 완료", "메모가 저장되었습니다.")
+            # 메모장 내용 저장
+            memo_content = self.memo_text.get(1.0, tk.END)
+            with open(file_path, "w") as file:
+                file.write(memo_content)
     def cancel_memo(self):
         # 메모 취소 시 메모장 초기화
         self.memo_text.delete("1.0", tk.END)
