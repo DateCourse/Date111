@@ -1,3 +1,4 @@
+import telepot
 import tkinter as tk
 from tkinter import scrolledtext
 from tkinter import messagebox
@@ -14,6 +15,7 @@ import random
 from PIL import ImageTk, Image
 import numpy as np
 from cefpython3 import cefpython as cef
+
 class DateCourseApp:
     def __init__(self, window):
         self.window = window
@@ -28,6 +30,7 @@ class DateCourseApp:
         self.locations = set()  # 지역 정보를 저장할 set
 
         self.create_widgets()
+        self.saved_courses = []  # saved_courses 속성 초기화
         # 메모장 칸을 추가하기 위한 함수 호출
         self.create_memo_pad()
         self.restaurants = {}  # 가게 이름과 주소를 저장하는 딕셔너리
@@ -110,12 +113,6 @@ class DateCourseApp:
         self.address_text = scrolledtext.ScrolledText(result_frame, height=15, width=35)  # 폭 조정
         self.address_text.pack(side=tk.LEFT, pady=5, anchor=tk.CENTER)
         self.address_text.config(font=("맑은 고딕", 12))
-
-    def save_course(self):
-        course = self.result_text.get(1.0, tk.END).strip()  # 결과 텍스트 상자의 내용을 가져와서 공백 제거
-        if course:
-            self.saved_courses.append(course)
-            messagebox.showinfo("저장 완료", "코스가 저장되었습니다.")
 
     def update_location_menu(self, theme):
         # 테마 선택에 따라 모든 지역을 가져옴
@@ -275,12 +272,17 @@ class DateCourseApp:
         self.memo_text.configure(bg='white')
 
         # 저장 버튼
-        save_button = tk.Button(memo_frame, text="저장", font=("맑은 고딕", 14), command=self.save_memo)
+        save_button = tk.Button(memo_frame, text="저장", font=("맑은 고딕", 12), command=self.save_memo)
         save_button.pack(side=tk.LEFT, padx=(10, 0))
         save_button.configure(bg='light pink')
 
+        # 파일 저장 버튼
+        file_save_button = tk.Button(memo_frame, text="파일 저장", font=("맑은 고딕", 12), command=self.save_memo_as_file)
+        file_save_button.pack(side=tk.LEFT, padx=(10, 0))
+        file_save_button.configure(bg='light pink')
+
         # 취소 버튼
-        cancel_button = tk.Button(memo_frame, text="취소", font=("맑은 고딕", 14), command=self.cancel_memo)
+        cancel_button = tk.Button(memo_frame, text="취소", font=("맑은 고딕", 12), command=self.cancel_memo)
         cancel_button.pack(side=tk.LEFT, padx=(10, 0))
         cancel_button.configure(bg='light pink')
 
@@ -290,12 +292,12 @@ class DateCourseApp:
         map_graph_button_frame.configure(bg='light pink')
 
         # 지도 버튼
-        map_button = tk.Button(map_graph_button_frame, text="지도", font=("맑은 고딕", 20), command=self.open_map)
+        map_button = tk.Button(map_graph_button_frame, text="지도", font=("맑은 고딕", 15), command=self.open_map)
         map_button.pack(side=tk.LEFT, padx=10)
         map_button.configure(bg='light pink')
 
         # 그래프 버튼
-        graph_button = tk.Button(map_graph_button_frame, text="그래프", font=("맑은 고딕", 20), command=self.open_graph)
+        graph_button = tk.Button(map_graph_button_frame, text="그래프", font=("맑은 고딕", 15), command=self.open_graph)
         graph_button.pack(side=tk.LEFT, padx=10)
         graph_button.configure(bg='light pink')
 
@@ -337,20 +339,25 @@ class DateCourseApp:
         else:
             # 메모장이 비어있을 경우에 대한 처리
             messagebox.showinfo("알림", "메모 내용을 입력해주세요.")
+
     def save_memo(self):
-        # 메모장 칸의 내용을 가져와서 저장하는 기능을 구현할 수 있습니다.
-        memo = self.memo_text.get("1.0", tk.END)
-        # 메모 저장에 대한 추가적인 동작을 원하신다면 여기에 작성할 수 있습니다.
-        # 저장 파일 선택
-        file_path = filedialog.asksaveasfilename(defaultextension=".txt",
-                                                 filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")])
+        course = self.result_text.get(1.0, tk.END).strip()  # 결과 텍스트 상자의 내용을 가져와서 공백 제거
+        if course:
+            self.saved_courses.append(course)
+            messagebox.showinfo("저장 완료", "코스가 저장되었습니다.")
+
+    def save_memo_as_file(self):
+        # 메모장 칸의 내용을 가져와서 파일로 저장하는 기능을 구현할 수 있습니다.
+        memo_content = self.memo_text.get("1.0", tk.END)
+
+        # 파일 저장 대화상자 열기
+        file_path = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text Files", "*.txt")])
         if file_path:
-            # 저장 확인 메시지 박스
-            messagebox.showinfo("저장 완료", "메모가 저장되었습니다.")
-            # 메모장 내용 저장
-            memo_content = self.memo_text.get(1.0, tk.END)
             with open(file_path, "w") as file:
                 file.write(memo_content)
+
+            messagebox.showinfo("저장 완료", "메모가 파일로 저장되었습니다.")
+
     def cancel_memo(self):
         # 메모 취소 시 메모장 초기화
         self.memo_text.delete("1.0", tk.END)
