@@ -9,12 +9,14 @@ import threading
 import sys
 import json
 import webbrowser
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 import random
 from PIL import ImageTk, Image
 import numpy as np
 from cefpython3 import cefpython as cef
+import xml.etree.ElementTree as ET
+
 
 class DateCourseApp:
     def __init__(self, window):
@@ -302,26 +304,67 @@ class DateCourseApp:
         graph_button.configure(bg='light pink')
 
     def open_graph(self):
-        # API 요청을 통해 데이터 가져오기
-        api_url = "https://openapi.gg.go.kr/Genrestrtstandpub"  # API의 엔드포인트 URL
-        api_key = "073a67dd2f404141bda409a5cf579366"  # API 키
-        response = requests.get(api_url, headers={"SIGUN_NM": api_key})
-        if response.status_code == 200:
-            data = response.json()
-            # 데이터 처리 및 그래프 생성
-            x = [item['x'] for item in data]
-            y = [item['y'] for item in data]
-            # 그래프 생성
-            plt.figure(figsize=(8, 6))
-            plt.plot(x, y)
-            plt.xlabel('X-axis')
-            plt.ylabel('Y-axis')
-            plt.title('Sample Graph')
-            # 그래프 출력
-            plt.show()
+        selected_location = self.location_var.get()
+
+        # 선택한 테마에 따라 URL 선택
+        if self.theme_var.get() == "맛집":
+            url = f"https://openapi.gg.go.kr/Genrestrtstandpub?KEY=073a67dd2f404141bda409a5cf579366&pIndex=1&Type=json&SIGUN_NM={selected_location}"
+        elif self.theme_var.get() == "카페":
+            url = f"https://openapi.gg.go.kr/Genrestrtcate?KEY=34d47489070244e2ac22cc1d11fedad0&pIndex=1&Type=json&SIGUN_NM={selected_location}"
+        elif self.theme_var.get() == "영화":
+            url = f"https://openapi.gg.go.kr/MovieTheater?KEY=20706406f12c4505bdfa0997a06f939a&pIndex=1&Type=json&SIGUN_NM={selected_location}"
         else:
-            # API 요청 오류 처리
-            print("API 요청 중 오류가 발생했습니다.")
+            # 다른 테마에 대한 처리 추가 가능
+            return
+
+        response = requests.get(url)
+
+        # 응답 오류 처리
+        if response.status_code != 200:
+            print(f"API 요청 오류: {response.status_code}")
+            return
+
+        data = response.json()
+
+        # API 응답이 유효한지 확인
+        if "Genrestrtstandpub" not in data and "Genrestrtcate" not in data and "MovieTheater" not in data:
+            return
+
+        # 선택한 테마에 따라 적절한 키 추출
+        if self.theme_var.get() == "맛집":
+            key = "Genrestrtstandpub"
+            x_label = "SIGUN_NM"
+        elif self.theme_var.get() == "카페":
+            key = "Genrestrtcate"
+            x_label = "SIGUN_NM"
+        elif self.theme_var.get() == "영화":
+            key = "MovieTheater"
+            x_label = "SIGUN_NM"
+
+        # 가게 수를 저장할 딕셔너리 초기화
+        store_counts = {}
+
+        # API 응답에서 가게 정보 추출하여 딕셔너리에 저장
+        for row in data[key][1]['row']:
+            location = row[x_label]
+            if location in store_counts:
+                store_counts[location] += 1
+            else:
+                store_counts[location] = 1
+
+        # 지역과 가게 수를 분리하여 리스트로 변환
+        locations = list(store_counts.keys())
+        counts = list(store_counts.values())
+
+        # 그래프 생성
+        plt.bar(locations, counts)
+        plt.xlabel('')
+        plt.ylabel('')
+        plt.title('지역별 가게 수')
+        plt.xticks(rotation=90)
+
+        # 그래프 표시
+        plt.show()
 
     def showMap(frame):
         global browser
@@ -331,6 +374,7 @@ class DateCourseApp:
         cef.Initialize()
         browser = cef.CreateBrowserSync(window_info, url='file:///map.html')
         cef.MessageLoop()
+
     def open_map(self):
         location = self.memo_text.get("1.0", tk.END).strip()  # 메모장의 내용을 가져옵니다.
         if location:
