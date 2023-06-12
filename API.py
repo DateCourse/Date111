@@ -356,12 +356,18 @@ class DateCourseApp:
         locations = list(store_counts.keys())
         counts = list(store_counts.values())
 
+        # 그래프 생성 전에 폰트 설정
+        plt.rcParams['font.family'] = 'Malgun Gothic'
+
         # 그래프 생성
         plt.bar(locations, counts)
-        plt.xlabel('')
-        plt.ylabel('')
+        plt.xlabel('지역')
+        plt.ylabel('가게 수')
         plt.title('지역별 가게 수')
         plt.xticks(rotation=90)
+
+        # y축 범위 설정
+        plt.ylim([0, np.max(counts) + 1])
 
         # 그래프 표시
         plt.show()
